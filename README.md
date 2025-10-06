@@ -93,9 +93,13 @@ Metadata for each store:
 
 **MAPE (Mean Absolute Percentage Error)** was used:
 
-\[
-\text{MAPE} = \frac{100}{n} \sum_{t=1}^{n} \left|\frac{y_t - \hat{y}_t}{y_t}\right|
-\]
+MAPE = (100 / n) * Σ | (y_t - ŷ_t) / y_t |
+
+Where:
+
+- n is the number of observations
+- y_t is the actual value at time t
+- ŷ_t is the predicted value at time t
 
 - Excludes days when store is closed (`Open = 0`).  
 - Handles zero-sales days via filtering or adjusted denominator.
@@ -161,8 +165,10 @@ Open `Rossmann_Sales_Forecasting_Case_Study_final.ipynb` (or whichever notebook 
 
 ## 👤 Author
 
-**Ritesh Ranjan**
+### **Ritesh Ranjan**
+
 Data Science & Machine Learning Enthusiast
+
 📧 [Gmail](mailto:ranjanritesh1729@gmail.com) | 🌐 [LinkedIn](https://www.linkedin.com/in/ritesh-nitk/) | [GitHub](https://github.com/Ritesh-GitHub-Ranjan)
 
 ---
