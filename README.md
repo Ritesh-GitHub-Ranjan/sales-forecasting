@@ -1,175 +1,165 @@
-# Rossmann Sales Forecasting — Time Series Modeling(Capstone Project)
+# Rossmann Sales Forecasting — Time Series Modeling (Capstone Project)
 
-## Problem Statement
+## Project Summary
 
-Rossmann is a European drug distributor operating **over 3,000 stores** across seven countries.  
-Accurate sales forecasting is crucial because many pharmaceutical products have a **short shelf life**.  
-Currently, individual store managers manually predict sales for the next six weeks — a process that is inconsistent and often inaccurate.
-
-This project builds a **statistical and machine learning pipeline** to forecast **daily sales for the next 42 days (6 weeks)** for selected Rossmann stores, while accounting for promotions, holidays, customers, and competition.
-
----
+Rossmann operates thousands of stores across Europe. Because many pharmaceutical products have short shelf lives, accurate daily sales forecasting is critical. In this project, we build a statistical forecasting pipeline to predict **daily sales for the next 6 weeks (42 days)** for selected Rossmann stores, taking into account promotions, customers, holidays, and competition.
 
 ## Objectives
 
-- Forecast **daily store-level sales** for the next 6 weeks.  
-- Quantify effects of:
-  - Customer traffic  
-  - Promotions (`Promo`, `Promo2`)  
+- Develop models to forecast store-level sales for a 42-day horizon.  
+- Quantify the influences of key variables:  
+  - Customer footfall  
+  - Promotional campaigns (`Promo`, `Promo2`)  
   - Holidays (state and school)  
-  - Competition distance and timing  
-- Check statistical properties:
-  - **Stationarity** of series (ADF, KPSS tests)  
-  - **Cointegration** (Johansen test)  
-- Build and compare models:
-  - ARIMA / SARIMAX  
-  - VAR / VECM  
-- Evaluate forecasts using **MAPE**.  
+  - Competition distance and opening times  
+- Verify time series properties:  
+  - Stationarity (ADF / KPSS tests)  
+  - Cointegration among variables (Johansen test)  
+- Compare and select among modeling approaches: ARIMA / SARIMAX and VAR / VECM.  
+- Evaluate performance using **MAPE (Mean Absolute Percentage Error)**.  
+- Present interpretable business insights from the best model.
 
----
+## Data
 
-## Data Description
+### 1. `train.csv`  
 
-The dataset includes two files:
+Contains daily-level sales and store operation variables:
 
-### `train.csv`
+| Column         | Description |
+|----------------|-------------|
+| `Store`        | Store identifier |
+| `DayOfWeek`    | Day of the week (1–7) |
+| `Date`         | Date of observation |
+| `Sales`        | Sales (target variable) |
+| `Customers`    | Number of customers |
+| `Open`         | Whether store was open (0 / 1) |
+| `Promo`         | Ongoing promotion flag |
+| `StateHoliday` | State holiday indicator |
+| `SchoolHoliday`| School holiday indicator |
 
-Daily sales & store operations data.
-| Column | Description |
+### 2. `store.csv`  
 
-|--------|-------------|
-| `Store` | Unique store ID |
-| `DayOfWeek` | Day of week (1 = Monday … 7 = Sunday) |
-| `Date` | Transaction date |
-| `Sales` | Daily sales (target) |
-| `Customers` | Number of customers |
-| `Open` | Store open flag (0/1) |
-| `Promo` | Promo campaign flag |
-| `StateHoliday` | a = public, b = Easter, c = Christmas, 0 = None |
-| `SchoolHoliday` | Whether school was closed |
+Metadata for each store:
 
-### `store.csv`
+| Column                    | Description |
+|---------------------------|-------------|
+| `StoreType`               | Store type (a / b / c / d) |
+| `Assortment`              | Assortment category (a / b / c) |
+| `CompetitionDistance`     | Distance to nearest competitor store |
+| `CompetitionOpenSince[Month/Year]` | When competitor opened |
+| `Promo2`                  | Whether store participates in long-term promotion |
+| `Promo2Since[Year/Week]`  | Start time for Promo2 participation |
+| `PromoInterval`           | Months when Promo2 renewals happen |
 
-Store metadata.
-| Column | Description |
+## Approach & Methodology
 
-|--------|-------------|
-| `StoreType` | Store type (a/b/c/d) |
-| `Assortment` | Assortment level (a = basic, b = extra, c = extended) |
-| `CompetitionDistance` | Distance to nearest competitor |
-| `CompetitionOpenSince[Month/Year]` | Competition opening date |
-| `Promo2` | Continuous promotion (0/1) |
-| `Promo2Since[Year/Week]` | Start of Promo2 |
-| `PromoInterval` | Renewal months of Promo2 |
+1. **Data Loading & Cleaning**  
+   - Merged `train` and `store` tables by `Store`.  
+   - Addressed missing or zero values in features.  
+2. **Exploratory Data Analysis (EDA)**  
+   - Distribution analysis, correlation checks, time-series trend plotting, holiday/seasonal effects.  
+3. **Outlier Handling**  
+   - Removed extreme values above the 99th percentile for `Sales` and `Customers`.  
+4. **Feature Engineering & Transformation**  
+   - Created calendar features (year, month, week).  
+   - Standardized `Sales` and `Customers` to z-scores (for VAR stability).  
+5. **Stationarity Testing**  
+   - ADF / KPSS tests on original and transformed series.  
+   - Differenced data if non-stationary.  
+6. **Cointegration Analysis**  
+   - Johansen test to detect long-run equilibrium relationships among `Sales`, `Customers`, and promotions.  
+7. **Model Training & Selection**  
+   - ARIMA / SARIMAX as baselines.  
+   - VAR / VECM for multivariate modeling.  
+   - Lag selection via AIC / BIC.  
+   - Residual diagnostics and impulse response analysis.  
+8. **Forecasting & Evaluation**  
+   - Forecast 42 days ahead.  
+   - Inverse-transform to original scale.  
+   - Compute MAPE (excluding closed-store days).  
+9. **Insights & Business Interpretation**  
+   - Use coefficients & impulse responses to interpret the effect of promotions, customers, etc.  
+   - Highlight model strengths, weaknesses, and recommendations.
 
----
+## Key Findings & Insights
 
-## Methodology
+- **Promotional campaigns** have statistically significant positive impact on sales (shown via impulse response).  
+- **Customers and Sales** display cointegration — changes in customer footfall lead sales over time.  
+- **Holiday periods** show notable sales spikes, especially around public and major holidays.  
+- **Competition distance** is negatively correlated with sales (closer competition means lower sales for a given store).  
+- Among models tested, **VAR (or VECM depending on cointegration)** yielded lowest MAPE on holdout data — performance in the range of ~12–15%.
 
-### 1. Data Import & Cleaning
+## Evaluation Metric
 
-- Loaded `train.csv` and `store.csv`.  
-- Handled missing values:  
-  - Replaced some columns with **0** (e.g., `Promo2SinceWeek`, `CompetitionDistance`)  
-  - Imputed others using **mode** (e.g., `CompetitionOpenSinceMonth`).  
-- Fixed data discrepancies (e.g., competition distance = 0).  
+**MAPE (Mean Absolute Percentage Error)** was used:
 
-### 2. Exploratory Data Analysis (EDA)
+\[
+\text{MAPE} = \frac{100}{n} \sum_{t=1}^{n} \left|\frac{y_t - \hat{y}_t}{y_t}\right|
+\]
 
-- **Univariate analysis**: distributions of store types, assortment, promos.  
-- **Bivariate analysis**: correlation of sales with promotions, holidays, customers.  
-- **Time series plots**: identified seasonality, weekly cycles, holiday spikes.  
+- Excludes days when store is closed (`Open = 0`).  
+- Handles zero-sales days via filtering or adjusted denominator.
 
-### 3. Preprocessing
+## Tools & Dependencies
 
-- Removed **outliers above 99th percentile** for `Sales` and `Customers`.  
-- Standardized key features (`Sales`, `Customers`) using `StandardScaler`.  
-- Created calendar features (year, month, week).  
+- **Python** (3.x)  
+- **Libraries**: `pandas`, `numpy`, `matplotlib`, `seaborn`, `statsmodels`, `scikit-learn`, `pickle`, `warnings`
 
-### 4. Statistical Tests
+You can pin versions in a `requirements.txt` as follows (sample):
 
-- **ADF & KPSS tests**: checked stationarity of sales and customer series.  
-- **Differencing**: applied where non-stationarity detected.  
-- **Johansen cointegration**: confirmed long-run relationship between Sales, Customers, and Promo.  
+```txt
+pandas>=1.5
+numpy>=1.21
+matplotlib
+seaborn
+statsmodels
+scikit-learn
+```
 
-### 5. Modeling
+## Setup & Usage Instructions
 
-- **ARIMA / SARIMAX**: baseline time series models.  
-- **VAR (Vector Autoregression)**: multivariate forecasting, capturing interactions.  
-- Lag order selected via AIC/BIC.  
-- Compared models on validation holdout.  
-
-### 6. Forecasting
-
-- Generated **42-day forecasts** (6 weeks) for selected stores.  
-- Reversed transformations (differencing, scaling) to obtain sales in original scale.  
-- Visualized forecast vs. actual sales.  
-
-### 7. Evaluation
-
-- Metric: **MAPE (Mean Absolute Percentage Error)**.  
-- Excluded closed-store days (`Open=0`).  
-- VAR showed superior performance with average MAPE ~12–15%.  
-
----
-
-## Key Insights
-
-- **Promotions** significantly boost sales, confirmed by impulse response analysis.  
-- **Customers and Sales are strongly cointegrated** (Granger causality p < 0.05).  
-- **Holidays** lead to demand spikes — especially public holidays and Christmas.  
-- **Competition distance** negatively correlated with sales (closer competition reduces sales).  
-
----
-
-## Tech Stack
-
-- **Language**: Python 3.10+  
-- **Core Libraries**:  
-  - Data Processing: `pandas`, `numpy`  
-  - Visualization: `matplotlib`, `seaborn`  
-  - Time Series Modeling: `statsmodels` (`ARIMA`, `SARIMAX`, `VAR`, `Johansen`)  
-  - Preprocessing: `scikit-learn`  
-  - Others: `pickle`, `warnings`  
-
----
-
-## How to Run
-
-1. Clone the repository:
+1. **Clone the repository**
 
 ```bash
-git clone https://github.com/<your-username>/rossmann-sales-forecasting.git
-cd rossmann-sales-forecasting
+git clone https://github.com/Ritesh-GitHub-Ranjan/sales-forecasting.git
+cd sales-forecasting
 ````
 
-1. Install requirements:
+1. **Install dependencies**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-1. Run Jupyter Notebook:
+1. **Open Jupyter Notebook**
 
 ```bash
 jupyter notebook
 ```
 
-1. Open and execute:
-   `Rossmann_Sales_Forecasting_Case_Study.ipynb`
+1. **Run the main notebook**
 
----
+Open `Rossmann_Sales_Forecasting_Case_Study_final.ipynb` (or whichever notebook is your final version) and execute cells sequentially.
+
+## Repository Structure
+
+```txt
+├── Dataset/                   # Contains train.csv, store.csv
+├── Rossmann_Sales_Forecasting_base_01.ipynb
+├── Rossmann_Sales_Forecasting_Case_Study_final.ipynb
+├── README.md
+└── requirements.txt
+```
 
 ## Future Enhancements
 
-- Incorporate **external datasets** (weather, macroeconomic factors).
-- Deploy as an **API** (Flask/FastAPI) for real-time sales forecasting.
-- Extend forecasting horizon beyond 6 weeks.
-- Explore **ML/DL models** (XGBoost, LSTM, Temporal Fusion Transformer).
+- Enrich model with **external variables** (weather, macro data, local events).
+- Deploy forecasting as a **web API** (Flask/FastAPI) for real-time use.
+- Test advanced algorithms: **XGBoost**, **LSTM**, **Temporal Fusion Transformer**.
+- Extend forecast beyond 6 weeks or build rolling forecasts.
+- Build a dashboard for non-technical stakeholders to view forecasts and insights.
 
----
-
-## Author
+## 👤 Author
 
 **Ritesh Ranjan**
 Data Science & Machine Learning Enthusiast
